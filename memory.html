@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory Allocation Simulator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 15px;
+      padding: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(0, 0, 0, 0.2);
+      color: white;
+      font-size: 1rem;
+    }
+
+    button {
+      background: #fdbb2d;
+      color: #1a2a6c;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background: #ffcc44;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .memory-visualization {
+      margin-top: 20px;
+    }
+
+    .memory-container {
+      height: 400px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      overflow-y: auto;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .memory-block {
+      margin-bottom: 5px;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      transition: all 0.3s ease;
+    }
+
+    .memory-block.free {
+      background: rgba(0, 255, 0, 0.2);
+      border-left: 5px solid #00ff00;
+    }
+
+    .memory-block.allocated {
+      background: rgba(255, 0, 0, 0.2);
+      border-left: 5px solid #ff0000;
+    }
+
+    .memory-block:hover {
+      transform: scale(1.02);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .stat-card {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      margin: 10px 0;
+      color: #fdbb2d;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    .process-list {
+      margin-top: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .process-item {
+      padding: 10px;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .algorithm-info {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      padding: 20px;
+      opacity: 0.7;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Memory Allocation Simulator</h1>
+      <p class="subtitle">Visualize First-Fit, Best-Fit, Worst-Fit, and Next-Fit allocation algorithms</p>
+    </header>
+
+    <div class="main-content">
+      <div class="panel">
+        <h2>Simulation Controls</h2>
+        <div class="controls">
+          <div class="control-group">
+            <label for="memorySize">Memory Size (KB)</label>
+            <input type="number" id="memorySize" value="1024" min="64" max="4096">
+          </div>
+          <div class="control-group">
+            <label for="algorithm">Allocation Algorithm</label>
+            <select id="algorithm">
+              <option value="firstFit">First-Fit</option>
+              <option value="bestFit">Best-Fit</option>
+              <option value="worstFit">Worst-Fit</option>
+              <option value="nextFit">Next-Fit</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label for="processSize">Process Size (KB)</label>
+            <input type="number" id="processSize" value="128" min="8" max="512">
+          </div>
+          <div class="control-group">
+            <label for="processId">Process ID</label>
+            <input type="text" id="processId" value="P1">
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="control-group">
+            <button id="allocateBtn">Allocate Memory</button>
+          </div>
+          <div class="control-group">
+            <button id="deallocateBtn">Deallocate Memory</button>
+          </div>
+          <div class="control-group">
+            <button id="resetBtn">Reset Memory</button>
+          </div>
+          <div class="control-group">
+            <button id="randomBtn">Random Process</button>
+          </div>
+        </div>
+
+        <div class="algorithm-info">
+          <h3>Algorithm Information</h3>
+          <p id="algoDescription">First-Fit: Allocates the first sufficient free block found from the beginning of memory.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Memory Visualization</h2>
+        <div class="memory-container" id="memoryContainer">
+          <!-- Memory blocks will be generated here -->
+        </div>
+
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-label">Total Memory</div>
+            <div class="stat-value" id="totalMemory">1024 KB</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Used Memory</div>
+            <div class="stat-value" id="usedMemory">0 KB</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Fragmentation</div>
+            <div class="stat-value" id="fragmentation">0%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Allocations</div>
+            <div class="stat-value" id="allocations">0</div>
+          </div>
+        </div>
+
+        <h2>Active Processes</h2>
+        <div class="process-list" id="processList">
+          <!-- Active processes will be listed here -->
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Memory Allocation Simulator | Created for Educational Purposes</p>
+    </footer>
+  </div>
+
+  <script>
+    // Memory management variables
+    let memory = [];
+    const memorySize = 1024; // Default memory size in KB
+    let allocatedBlocks = [];
+    let freeBlocks = [{start: 0, size: memorySize}];
+    let nextFitIndex = 0;
+    let allocationCount = 0;
+
+    // DOM elements
+    const memoryContainer = document.getElementById('memoryContainer');
+    const totalMemoryEl = document.getElementById('totalMemory');
+    const usedMemoryEl = document.getElementById('usedMemory');
+    const fragmentationEl = document.getElementById('fragmentation');
+    const allocationsEl = document.getElementById('allocations');
+    const processListEl = document.getElementById('processList');
+    const algoDescriptionEl = document.getElementById('algoDescription');
+    const algorithmSelect = document.getElementById('algorithm');
+
+    // Initialize memory
+    function initializeMemory() {
+      memory = Array(memorySize).fill(0);
+      allocatedBlocks = [];
+      freeBlocks = [{start: 0, size: memorySize}];
+      nextFitIndex = 0;
+      allocationCount = 0;
+      
+      updateMemoryVisualization();
+      updateStats();
+      updateProcessList();
+    }
+
+    // Update memory visualization
+    function updateMemoryVisualization() {
+      memoryContainer.innerHTML = '';
+      
+      // Create a combined list of all blocks (allocated and free)
+      const allBlocks = [...allocatedBlocks, ...freeBlocks];
+      allBlocks.sort((a, b) => a.start - b.start);
+      
+      // Display each block
+      allBlocks.forEach(block => {
+        const blockEl = document.createElement('div');
+        blockEl.className = `memory-block ${block.processId ? 'allocated' : 'free'}`;
+        
+        const sizePercentage = (block.size / memorySize) * 100;
+        if (sizePercentage < 5) {
+          // For very small blocks, just show a marker
+          blockEl.innerHTML = `
+            <span>${block.processId ? 'Allocated' : 'Free'}</span>
+            <span>${block.size}KB</span>
+          `;
+          blockEl.title = `Address: ${block.start}-${block.start + block.size - 1}, Size: ${block.size}KB`;
+        } else {
+          blockEl.innerHTML = `
+            <span>${block.processId ? `Process ${block.processId}` : 'Free Memory'}</span>
+            <span>${block.size}KB (${sizePercentage.toFixed(1)}%)</span>
+          `;
+        }
+        
+        memoryContainer.appendChild(blockEl);
+      });
+    }
+
+    // Update statistics
+    function updateStats() {
+      const totalUsed = allocatedBlocks.reduce((sum, block) => sum + block.size, 0);
+      const fragmentation = ((freeBlocks.length - 1) / allocatedBlocks.length) * 100 || 0;
+      
+      totalMemoryEl.textContent = `${memorySize} KB`;
+      usedMemoryEl.textContent = `${totalUsed} KB`;
+      fragmentationEl.textContent = `${fragmentation.toFixed(1)}%`;
+      allocationsEl.textContent = allocationCount;
+    }
+
+    // Update process list
+    function updateProcessList() {
+      processListEl.innerHTML = '';
+      
+      if (allocatedBlocks.length === 0) {
+        processListEl.innerHTML = '<div class="process-item">No active processes</div>';
+        return;
+      }
+      
+      allocatedBlocks.forEach(block => {
+        const processEl = document.createElement('div');
+        processEl.className = 'process-item';
+        processEl.innerHTML = `
+          <span>${block.processId}</span>
+          <span>${block.size} KB (${block.start}-${block.start + block.size - 1})</span>
+        `;
+        processListEl.appendChild(processEl);
+      });
+    }
+
+    // Allocation algorithms
+    function firstFit(size, processId) {
+      for (let i = 0; i < freeBlocks.length; i++) {
+        if (freeBlocks[i].size >= size) {
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    function bestFit(size, processId) {
+      let bestIdx = -1;
+      let smallestSize = Infinity;
+      
+      for (let i = 0; i < freeBlocks.length; i++) {
+        if (freeBlocks[i].size >= size && freeBlocks[i].size < smallestSize) {
+          bestIdx = i;
+          smallestSize = freeBlocks[i].size;
+        }
+      }
+      
+      return bestIdx;
+    }
+
+    function worstFit(size, processId) {
+      let worstIdx = -1;
+      let largestSize = -1;
+      
+      for (let i = 0; i < freeBlocks.length; i++) {
+        if (freeBlocks[i].size >= size && freeBlocks[i].size > largestSize) {
+          worstIdx = i;
+          largestSize = freeBlocks[i].size;
+        }
+      }
+      
+      return worstIdx;
+    }
+
+    function nextFit(size, processId) {
+      for (let i = 0; i < freeBlocks.length; i++) {
+        const idx = (nextFitIndex + i) % freeBlocks.length;
+        if (freeBlocks[idx].size >= size) {
+          nextFitIndex = (idx + 1) % freeBlocks.length;
+          return idx;
+        }
+      }
+      return -1;
+    }
+
+    // Allocate memory
+    function allocateMemory() {
+      const processId = document.getElementById('processId').value;
+      const size = parseInt(document.getElementById('processSize').value);
+      const algorithm = document.getElementById('algorithm').value;
+      
+      if (!processId || size <= 0) {
+        alert('Please enter a valid Process ID and Size');
+        return;
+      }
+      
+      // Check if process ID already exists
+      if (allocatedBlocks.some(block => block.processId === processId)) {
+        alert(`Process ${processId} is already allocated in memory`);
+        return;
+      }
+      
+      let blockIndex = -1;
+      
+      // Select algorithm
+      switch (algorithm) {
+        case 'firstFit':
+          blockIndex = firstFit(size, processId);
+          break;
+        case 'bestFit':
+          blockIndex = bestFit(size, processId);
+          break;
+        case 'worstFit':
+          blockIndex = worstFit(size, processId);
+          break;
+        case 'nextFit':
+          blockIndex = nextFit(size, processId);
+          break;
+      }
+      
+      if (blockIndex === -1) {
+        alert('Not enough contiguous memory available!');
+        return;
+      }
+      
+      // Allocate the block
+      const block = freeBlocks[blockIndex];
+      const allocatedBlock = {
+        start: block.start,
+        size: size,
+        processId: processId
+      };
+      
+      // Update free blocks
+      if (block.size === size) {
+        // Exact fit - remove the free block
+        freeBlocks.splice(blockIndex, 1);
+      } else {
+        // Partial fit - reduce the free block
+        block.start += size;
+        block.size -= size;
+      }
+      
+      // Add to allocated blocks
+      allocatedBlocks.push(allocatedBlock);
+      allocationCount++;
+      
+      // Update visualization and stats
+      updateMemoryVisualization();
+      updateStats();
+      updateProcessList();
+    }
+
+    // Deallocate memory
+    function deallocateMemory() {
+      const processId = document.getElementById('processId').value;
+      
+      if (!processId) {
+        alert('Please enter a Process ID to deallocate');
+        return;
+      }
+      
+      const index = allocatedBlocks.findIndex(block => block.processId === processId);
+      
+      if (index === -1) {
+        alert(`Process ${processId} not found in memory`);
+        return;
+      }
+      
+      const block = allocatedBlocks[index];
+      allocatedBlocks.splice(index, 1);
+      
+      // Add the block back to free blocks and merge adjacent blocks
+      freeBlocks.push({start: block.start, size: block.size});
+      freeBlocks.sort((a, b) => a.start - b.start);
+      
+      // Merge adjacent free blocks
+      for (let i = 0; i < freeBlocks.length - 1; i++) {
+        if (freeBlocks[i].start + freeBlocks[i].size === freeBlocks[i+1].start) {
+          freeBlocks[i].size += freeBlocks[i+1].size;
+          freeBlocks.splice(i+1, 1);
+          i--; // Check the same index again
+        }
+      }
+      
+      // Update visualization and stats
+      updateMemoryVisualization();
+      updateStats();
+      updateProcessList();
+    }
+
+    // Generate random process
+    function generateRandomProcess() {
+      const processId = 'P' + Math.floor(Math.random() * 1000);
+      const size = Math.max(16, Math.floor(Math.random() * 256));
+      
+      document.getElementById('processId').value = processId;
+      document.getElementById('processSize').value = size;
+    }
+
+    // Update algorithm description
+    function updateAlgorithmDescription() {
+      const algorithm = document.getElementById('algorithm').value;
+      let description = '';
+      
+      switch (algorithm) {
+        case 'firstFit':
+          description = 'First-Fit: Allocates the first sufficient free block found from the beginning of memory.';
+          break;
+        case 'bestFit':
+          description = 'Best-Fit: Allocates the smallest sufficient free block to minimize wastage.';
+          break;
+        case 'worstFit':
+          description = 'Worst-Fit: Allocates the largest sufficient free block to minimize fragmentation.';
+          break;
+        case 'nextFit':
+          description = 'Next-Fit: Similar to First-Fit but starts searching from the last allocation position.';
+          break;
+      }
+      
+      algoDescriptionEl.textContent = description;
+    }
+
+    // Event listeners
+    document.getElementById('allocateBtn').addEventListener('click', allocateMemory);
+    document.getElementById('deallocateBtn').addEventListener('click', deallocateMemory);
+    document.getElementById('resetBtn').addEventListener('click', initializeMemory);
+    document.getElementById('randomBtn').addEventListener('click', generateRandomProcess);
+    algorithmSelect.addEventListener('change', updateAlgorithmDescription);
+
+    // Initialize the simulator
+    initializeMemory();
+    updateAlgorithmDescription();
+  </script>
+</body>
+</html>
